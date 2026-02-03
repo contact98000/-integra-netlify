@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Envoi Email - Integra</title>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Instrument+Serif&display=swap" rel="stylesheet">
+    <style>
+        :root{--bg:#0a0a0b;--card:#141416;--input:#1c1c1f;--accent:#c9a962;--accent-light:#e4d4a5;--text:#f5f5f5;--muted:#a0a0a5;--border:#2a2a2e;--success:#4ade80;--error:#f87171}
+        *{margin:0;padding:0;box-sizing:border-box}
+        body{font-family:'DM Sans',sans-serif;background:var(--bg);min-height:100vh;display:flex;align-items:center;justify-content:center;color:var(--text);padding:20px}
+        .container{width:100%;max-width:480px}
+        .card{background:var(--card);border:1px solid var(--border);border-radius:20px;padding:40px;box-shadow:0 0 60px rgba(201,169,98,.1)}
+        .logo{text-align:center;margin-bottom:32px}
+        .logo-text{font-family:'Instrument Serif',serif;font-size:2.2rem;color:var(--accent);letter-spacing:.08em}
+        .logo-sub{font-size:.7rem;letter-spacing:.25em;color:#6b6b70;margin-top:6px}
+        h1{font-family:'Instrument Serif',serif;font-size:1.5rem;text-align:center;margin-bottom:24px}
+        .form-group{margin-bottom:20px}
+        label{display:block;font-size:.7rem;font-weight:500;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-bottom:8px}
+        input{width:100%;padding:14px 16px;font-family:inherit;font-size:.95rem;background:var(--input);border:1px solid var(--border);border-radius:10px;color:var(--text);outline:none;transition:border .2s}
+        input:focus{border-color:var(--accent)}
+        input::placeholder{color:#6b6b70}
+        .copy-box{display:flex;align-items:center;gap:10px;padding:12px 14px;background:rgba(201,169,98,.08);border:1px solid rgba(201,169,98,.2);border-radius:8px;margin-bottom:24px;font-size:.8rem;color:var(--muted)}
+        .copy-box span{color:var(--accent-light);font-weight:500}
+        .btn{width:100%;padding:16px;font-family:inherit;font-size:.9rem;font-weight:600;letter-spacing:.05em;text-transform:uppercase;background:linear-gradient(135deg,var(--accent),#9a7b3d);color:var(--bg);border:none;border-radius:10px;cursor:pointer;transition:transform .2s,box-shadow .2s}
+        .btn:hover{transform:translateY(-2px);box-shadow:0 8px 24px rgba(201,169,98,.3)}
+        .btn:disabled{opacity:.6;cursor:not-allowed;transform:none}
+        .spinner{width:18px;height:18px;border:2px solid transparent;border-top-color:var(--bg);border-radius:50%;animation:spin .7s linear infinite;display:inline-block;vertical-align:middle;margin-right:8px}
+        @keyframes spin{to{transform:rotate(360deg)}}
+        .status{margin-top:20px;padding:14px;border-radius:10px;text-align:center;font-size:.85rem;display:none}
+        .status.success{display:block;background:rgba(74,222,128,.1);border:1px solid rgba(74,222,128,.3);color:var(--success)}
+        .status.error{display:block;background:rgba(248,113,113,.1);border:1px solid rgba(248,113,113,.3);color:var(--error)}
+        .footer{text-align:center;margin-top:24px;padding-top:20px;border-top:1px solid var(--border);font-size:.7rem;color:#6b6b70}
+        .footer a{color:var(--accent);text-decoration:none}
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="card">
+            <div class="logo">
+                <div class="logo-text">INTEGRA</div>
+                <div class="logo-sub">SURFACES PREMIUM</div>
+            </div>
+            <h1>Envoi Email Client</h1>
+            <form id="form">
+                <div class="form-group">
+                    <label>Nom du magasin bénéficiaire</label>
+                    <input type="text" id="storeName" placeholder="Ex: Cuisines Elite Monaco" required>
+                </div>
+                <div class="form-group">
+                    <label>Email du client</label>
+                    <input type="email" id="clientEmail" placeholder="client@exemple.com" required>
+                </div>
+                <div class="copy-box">
+                    📋 Copie envoyée à <span>s.fernandes@integra-hpl.com</span>
+                </div>
+                <button type="submit" class="btn" id="btn">✉️ Envoyer l'email</button>
+                <div id="status" class="status"></div>
+            </form>
+            <div class="footer">Template Mailjet #7717681 • <a href="https://mailjet.com">Mailjet</a></div>
+        </div>
+    </div>
+    <script>
+        const form = document.getElementById('form');
+        const btn = document.getElementById('btn');
+        const status = document.getElementById('status');
+        
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const storeName = document.getElementById('storeName').value.trim();
+            const clientEmail = document.getElementById('clientEmail').value.trim();
+            
+            btn.disabled = true;
+            btn.innerHTML = '<span class="spinner"></span>Envoi en cours...';
+            status.className = 'status';
+            status.style.display = 'none';
+            
+            try {
+                const res = await fetch('/api/send-email', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ storeName, clientEmail })
+                });
+                const data = await res.json();
+                
+                if (data.success) {
+                    status.textContent = '✓ Email envoyé avec succès !';
+                    status.className = 'status success';
+                    form.reset();
+                } else {
+                    throw new Error(data.error || 'Erreur inconnue');
+                }
+            } catch (err) {
+                status.textContent = '✗ Erreur: ' + err.message;
+                status.className = 'status error';
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = '✉️ Envoyer l\'email';
+            }
+        });
+    </script>
+</body>
+</html>
